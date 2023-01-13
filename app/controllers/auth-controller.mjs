@@ -32,31 +32,23 @@ class AuthController extends Abstract_Controller {
        * password: string
        * }}
        */
-      let loginData = request.body;
-      if (loginData && loginData.username && loginData.password) {
-        let user = await this.env.pgModel.users.getUserByUsername(loginData.username);
-        if (!user) {
+      let _loginData = request.body;
+      if (_loginData && _loginData.username && _loginData.password) {
+        let _user = await this.env.pgModel.users.getUserByUsername(_loginData.username);
+        if (!_user) {
           return response.sendStatus(HttpResponseStatus.NOT_AUTHENTICATED);
         } else {
-          let authenticated = await Crypt.validateHash(loginData.password, user.password_us);
-          if (authenticated) {
-            let grants = await this.env.pgModel.users.getUserGrants(user.id_us);
-            // let deviceSession = await this.env.session.sessionManager.storeNewSession({
-            //   user_id: user.id_us,
-            //   customer_id: user.pbx.id_customer_pb,
-            //   pbx_id: user.id_pbx_us,
-            //   pbx_supplier: user.pbx.pbx_supplier_pb,
-            //   application_id: loginData.application_id,
-            //   os: loginData.os,
-            //   grants: grants ? grants.map((item) => item.code_gr) : [],
-            //   features: {
-            //     [FEATURES.TIMECARDS]: user.enabled_punching_us
-            //   }
-            // });
-            // this.env.sendResponse(request, response, HttpResponseStatus.OK, {
-            //   access_token: deviceSession.access_token,
-            //   refresh_token: deviceSession.refresh_token
-            // });
+          let _authenticated = await Crypt.validateHash(_loginData.password, _user.password_us);
+          if (_authenticated) {
+            let _grants = await this.env.pgModel.users.getUserGrants(_user.id_us);
+            let _session = await this.env.session.sessionManager.storeNewSession({
+              id_user: _user.id_us,
+              grants: _grants
+            });
+            return response.send({
+              access_token: _session.access_token,
+              refresh_token: _session.refresh_token
+            });
           } else {
             return this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHENTICATED);
           }

@@ -38,8 +38,15 @@ class Users extends Abstract_PgModel {
    */
   async getUserGrants(userId) {
     try {
-      // TODO
-      return Promise.resolve([]);
+      let sql = `select gg.code_gr 
+      from grants_gr gg 
+      inner join users_grants_ug ugu 
+        on id_gr = ugu.id_grant_ug 
+      where ugu.id_user_ug = $1`;
+
+      let result = await this.__connection.query({ sql: sql, replacements: [userId] });
+
+      return Promise.resolve(result.rows.map((item) => item.code_gr));
     } catch (e) {
       return Promise.reject(e);
     }
