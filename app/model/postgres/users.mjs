@@ -20,11 +20,31 @@ class Users extends Abstract_PgModel {
     try {
       let sql = `select *
       from users_us a
-      where deleted_us 
+      where deleted_us = false
       and (fullname_us =$1 or email_us =$1)`;
       return this.__connection.queryReturnFirst({
         sql: sql,
         replacements: [username]
+      });
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  /**
+   *
+   * @param {number} userId
+   * @returns {Promise<IUser>}
+   */
+  async getUserById(userId) {
+    try {
+      let sql = `select *
+      from users_us a
+      where deleted_us = false 
+      and id_us=$1`;
+      return this.__connection.queryReturnFirst({
+        sql: sql,
+        replacements: [userId]
       });
     } catch (e) {
       return Promise.reject(e);

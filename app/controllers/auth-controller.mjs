@@ -50,11 +50,11 @@ class AuthController extends Abstract_Controller {
               refresh_token: _session.refresh_token
             });
           } else {
-            return this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHENTICATED);
+            return response.sendStatus(HttpResponseStatus.NOT_AUTHENTICATED);
           }
         }
       } else {
-        return this.env.sendResponse(request, response, HttpResponseStatus.MISSING_PARAMS);
+        return response.sendStatus(HttpResponseStatus.BAD_PARAMS);
       }
     } catch (e) {
       next(e);
@@ -62,9 +62,6 @@ class AuthController extends Abstract_Controller {
   }
 
   /**
-   * @typedef {object} LogoutData
-   * @property {string} refresh_token
-   *
    * @param {import("express").Request} request
    * @param {import("express").Response} response
    * @param {import("express").NextFunction} next
@@ -72,23 +69,20 @@ class AuthController extends Abstract_Controller {
    */
   async __logout(request, response, next) {
     try {
-      // /** @type {LogoutData} */
-      // let logoutData = request.body;
-      // if (logoutData && logoutData.refresh_token) {
-      //   let removed = await this.env.session.sessionManager.removeToken(logoutData.refresh_token);
-      //   this.env.sendResponse(request, response, removed > 0 ? HttpResponseStatus.OK : HttpResponseStatus.NOT_AUTHENTICATED);
-      // } else {
-      //   this.env.sendResponse(request, response, HttpResponseStatus.MISSING_PARAMS);
-      // }
+      /** @type {{refresh_token:string}} */
+      let logoutData = request.body;
+      if (logoutData && logoutData.refresh_token) {
+        let removed = await this.env.session.sessionManager.removeToken(logoutData.refresh_token);
+        return response.sendStatus(removed > 0 ? HttpResponseStatus.OK : HttpResponseStatus.NOT_AUTHENTICATED);
+      } else {
+        return response.sendStatus(HttpResponseStatus.MISSING_PARAMS);
+      }
     } catch (e) {
       next(e);
     }
   }
 
   /**
-   * @typedef {object} RefreshData
-   * @property {string} refresh_token
-   *
    * @param {import("express").Request} request
    * @param {import("express").Response} response
    * @param {import("express").NextFunction} next
@@ -96,48 +90,40 @@ class AuthController extends Abstract_Controller {
    */
   async __refresh(request, response, next) {
     try {
-      // /** @type {RefreshData} */
-      // let refreshData = request.body;
-      // if (refreshData && refreshData.refresh_token) {
-      //   if (this.env.config.updateGrantsOnTokenRefresh) {
-      //     let deviceSession = await this.env.session.sessionManager.updateDeviceSession(refreshData.refresh_token);
-      //     if (deviceSession) {
-      //       let user = await this.env.pgModels.users.getUserById(deviceSession.user_id);
-      //       if (user && user.blocked_us) {
-      //         return this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHORIZED);
-      //       } else {
-      //         this.env.sendResponse(request, response, HttpResponseStatus.OK, {
-      //           access_token: deviceSession.access_token
-      //         });
-      //       }
-      //     } else {
-      //       return this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHENTICATED);
-      //     }
-      //   } else {
-      //     /** @type {import("common-mjs").DeviceSession} */
-      //     let deviceSession = await this.env.session.sessionManager.getSessionByRefeshToken(refreshData.refresh_token);
-      //     if (deviceSession) {
-      //       let user = await this.env.pgModels.users.getUserById(deviceSession.user_id);
-      //       if (user && user.blocked_us) {
-      //         return this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHORIZED);
-      //       } else {
-      //         let grants = await this.env.pgModels.users.getUserGrants(user.id_us);
-      //         deviceSession.grants = grants ? grants.map((item) => item.code_gr) : [];
-      //         deviceSession.features = {
-      //           [FEATURES.TIMECARDS]: user.enabled_punching_us
-      //         };
-      //         deviceSession = await this.env.session.sessionManager.updateDeviceSessionAndGrants(deviceSession);
-      //         this.env.sendResponse(request, response, HttpResponseStatus.OK, {
-      //           access_token: deviceSession.access_token
-      //         });
-      //       }
-      //     } else {
-      //       return this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHENTICATED);
-      //     }
-      //   }
-      // } else {
-      //   return this.env.sendResponse(request, response, HttpResponseStatus.MISSING_PARAMS);
-      // }
+      /** @type {{refresh_token:string}} */
+      let refreshData = request.body;
+      if (refreshData && refreshData.refresh_token) {
+        if (!this.env.config.updateGrantsOnTokenRefresh) {
+          let deviceSession = await this.env.session.sessionManager.updateDeviceSession(refreshData.refresh_token);
+          if (deviceSession) {
+            let user = await this.env.pgModel.users.getUserById(deviceSession.user_id);
+            if (!user) {
+              return response.sendStatus(HttpResponseStatus.NOT_AUTHENTICATED);
+            } else {
+              return response.send({ access_token: deviceSession.access_token });
+            }
+          } else {
+            return response.sendStatus(HttpResponseStatus.NOT_AUTHENTICATED);
+          }
+        } else {
+          /** @type {import("node-be-core").ISession} */
+          let deviceSession = await this.env.session.sessionManager.getSessionByRefeshToken(refreshData.refresh_token);
+          if (deviceSession) {
+            let user = await this.env.pgModel.users.getUserById(deviceSession.user_id);
+            if (!user) {
+              return response.sendStatus(HttpResponseStatus.NOT_AUTHENTICATED);
+            } else {
+              deviceSession.grants = await this.env.pgModel.users.getUserGrants(user.id_us);
+              deviceSession = await this.env.session.sessionManager.updateDeviceSessionAndGrants(deviceSession);
+              return response.send({ access_token: deviceSession.access_token });
+            }
+          } else {
+            return response.sendStatus(HttpResponseStatus.NOT_AUTHENTICATED);
+          }
+        }
+      } else {
+        return response.sendStatus(HttpResponseStatus.BAD_PARAMS);
+      }
     } catch (e) {
       next(e);
     }

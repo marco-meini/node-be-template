@@ -18,7 +18,8 @@ import { PgModel } from "./model/postgres/pg-model.mjs";
  * session: {
  *  headerName: string,
  *  expiration: number
- * }
+ * },
+ * updateGrantsOnTokenRefresh: boolean
  * }} Config
  */
 
