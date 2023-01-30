@@ -1,7 +1,7 @@
 "use strict";
 
-import { Logger, MongoClienManager, PgClientManager, SessionMiddleware } from "node-be-core";
-import config from "./config/config.mjs";
+import { Logger, MongoClienManager, PgClientManager, SendGridMailManager, SessionMiddleware } from "node-be-core";
+import config from "../config/config.mjs";
 import { MongoModel } from "./model/mongo/mongo-model.mjs";
 import { PgModel } from "./model/postgres/pg-model.mjs";
 
@@ -19,7 +19,11 @@ import { PgModel } from "./model/postgres/pg-model.mjs";
  *  headerName: string,
  *  expiration: number
  * },
- * updateGrantsOnTokenRefresh: boolean
+ * updateGrantsOnTokenRefresh: boolean,
+ * mailManager: {
+ *  apiKey: string,
+ *  from: string
+ * }
  * }} Config
  */
 
@@ -40,11 +44,14 @@ class Environment {
   mongoModel;
   /** @type {SessionMiddleware} */
   session;
+  /** @type {SendGridMailManager} */
+  mailManager;
 
   constructor() {
     this.config = config;
     this.logger = new Logger(this.config.logLevel);
     this.pgModel = new PgModel(new PgClientManager(this.config.db, this.logger.sql.bind(this.logger)));
+    this.mailManager = new SendGridMailManager(config.mailManager.apiKey);
   }
 
   async start() {

@@ -1,4 +1,5 @@
-import { Abstract_PgModel } from "node-be-core";
+import { Abstract_PgModel, Crypt } from "node-be-core";
+import { generate } from "randomstring";
 
 /**
  * @typedef {{
@@ -16,12 +17,12 @@ class Users extends Abstract_PgModel {
    * @param {string} username
    * @returns {Promise<IUser>}
    */
-  async getUserByUsername(username) {
+  async getUserByEmail(username) {
     try {
       let sql = `select *
       from users_us a
       where deleted_us = false
-      and (fullname_us =$1 or email_us =$1)`;
+      and email_us =$1`;
       return this.__connection.queryReturnFirst({
         sql: sql,
         replacements: [username]
@@ -67,6 +68,23 @@ class Users extends Abstract_PgModel {
       let result = await this.__connection.query({ sql: sql, replacements: [userId] });
 
       return Promise.resolve(result.rows.map((item) => item.code_gr));
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
+
+  /**
+   *
+   * @param {number} userId
+   * @param {import("pg").PoolClient} [transactionClient]
+   * @returns {Promise<string>}
+   */
+  async generateNewPassword(userId, transactionClient) {
+    try {
+      let newPassword = generate(8);
+      let hash = await Crypt.hash(newPassword);
+      await this.__connection.query({ sql: "update users_us set password_us=$1 where id_us=$2", replacements: [hash, userId], transactionClient: transactionClient });
+      return Promise.resolve(newPassword);
     } catch (e) {
       return Promise.reject(e);
     }

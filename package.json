@@ -10,6 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "express": "^4.18.2",
-    "node-be-core": "git@github.com:marco-meini/node-be-core.git"
+    "handlebars": "^4.7.7",
+    "node-be-core": "git@github.com:marco-meini/node-be-core.git",
+    "randomstring": "^1.2.3"
   }
 }

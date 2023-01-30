@@ -1,8 +1,11 @@
 "use strict";
 
-import { Crypt, HttpResponseStatus } from "node-be-core";
+import { Crypt, Files, HttpResponseStatus } from "node-be-core";
 import { Environment } from "../environment.mjs";
 import { Abstract_Controller } from "./abstract-controller.mjs";
+import handlebars from "handlebars";
+import { join } from "path";
+import { readFileSync } from "fs";
 
 class AuthController extends Abstract_Controller {
   /**
@@ -28,13 +31,13 @@ class AuthController extends Abstract_Controller {
     try {
       /**
        * @type {{
-       * username: string,
+       * email: string,
        * password: string
        * }}
        */
       let _loginData = request.body;
-      if (_loginData && _loginData.username && _loginData.password) {
-        let _user = await this.env.pgModel.users.getUserByUsername(_loginData.username);
+      if (_loginData && _loginData.email && _loginData.password) {
+        let _user = await this.env.pgModel.users.getUserByEmail(_loginData.email);
         if (!_user) {
           return response.sendStatus(HttpResponseStatus.NOT_AUTHENTICATED);
         } else {
@@ -136,31 +139,33 @@ class AuthController extends Abstract_Controller {
    */
   async __passwordRecovery(request, response, next) {
     try {
-      // if (request.body && request.body.username_email) {
-      //   let tc = await this.env.connection.startTransaction();
-      //   try {
-      //     let user = await this.env.pgModels.users.getUserForPasswordRecovery(request.body.username_email, tc);
-      //     if (user && user.blocked_us) {
-      //       this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHORIZED);
-      //     } else if (!user) {
-      //       this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHENTICATED);
-      //     } else {
-      //       let newPassword = await this.env.pgModels.users.generateNewPassword(user.id_us, tc);
-      //       await this.env.pgModels.users.sendPasswordRecoveryEmail(user, request.get("host"), newPassword, this.env.config.sparkpost.api);
-      //       this.env.connection.commit(tc);
-      //       this.env.sendResponse(request, response, HttpResponseStatus.OK);
-      //     }
-      //   } catch (e) {
-      //     try {
-      //       await this.env.connection.rollback(tc);
-      //     } catch (e) {
-      //       this.env.logger.error(e);
-      //     }
-      //     next(e);
-      //   }
-      // } else {
-      //   this.env.sendResponse(request, response, HttpResponseStatus.MISSING_PARAMS);
-      // }
+      if (request.body && request.body.email) {
+        let tc = await this.env.pgModel.connection.startTransaction();
+        try {
+          let user = await this.env.pgModel.users.getUserByEmail(request.body.email);
+          if (!user) {
+            response.sendStatus(HttpResponseStatus.NOT_AUTHENTICATED);
+          } else {
+            let newPassword = await this.env.pgModel.users.generateNewPassword(user.id_us, tc);
+            let templatePath = join(Files.appRoot(), "assets/templates", "ResetPassword.htm");
+            let file = readFileSync(templatePath, { encoding: "utf8" });
+            let html = handlebars.compile(file)({
+              name: user.fullname_us,
+              password: newPassword,
+              host: request.get("host")
+            });
+            // send email
+            let result = await this.env.mailManager.send({ from: this.env.config.mailManager.from, to: user.email_us, subject: "Reset password", html: html });
+            await this.env.pgModel.connection.commit(tc);
+            response.send();
+          }
+        } catch (e) {
+          await this.env.connection.rollback(tc);
+          next(e);
+        }
+      } else {
+        response.sendStatus(HttpResponseStatus.BAD_PARAMS);
+      }
     } catch (e) {
       next(e);
     }

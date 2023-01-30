@@ -9,6 +9,7 @@ class PgModel {
    * @param {PgClientManager} connection
    */
   constructor(connection) {
+    this.connection = connection;
     this.users = new Users(connection);
   }
 }
