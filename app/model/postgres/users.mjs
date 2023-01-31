@@ -89,6 +89,22 @@ class Users extends Abstract_PgModel {
       return Promise.reject(e);
     }
   }
+
+  /**
+   *
+   * @param {number} userId
+   * @param {string} hash
+   * @returns {Promise<void>}
+   */
+  async updatePassword(userId, hash) {
+    try {
+      let sql = `update users_us set password_us=$1 where id_us=$2`;
+      await this.__connection.query({ sql: sql, replacements: [hash, userId] });
+      return Promise.resolve();
+    } catch (e) {
+      return Promise.reject(e);
+    }
+  }
 }
 
 export { Users };

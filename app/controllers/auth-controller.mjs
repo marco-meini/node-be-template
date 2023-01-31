@@ -1,6 +1,4 @@
-"use strict";
-
-import { Crypt, Files, HttpResponseStatus } from "node-be-core";
+import { Crypt, Files, HttpResponseStatus, Strings } from "node-be-core";
 import { Environment } from "../environment.mjs";
 import { Abstract_Controller } from "./abstract-controller.mjs";
 import handlebars from "handlebars";
@@ -160,7 +158,7 @@ class AuthController extends Abstract_Controller {
             response.send();
           }
         } catch (e) {
-          await this.env.connection.rollback(tc);
+          await this.env.pgModel.connection.rollback(tc);
           next(e);
         }
       } else {
@@ -179,27 +177,23 @@ class AuthController extends Abstract_Controller {
    */
   async __passwordChange(request, response, next) {
     try {
-      // if (request.body && request.body.current_password && request.body.new_password) {
-      //   let user = await this.env.pgModels.users.getUserById(request.session.user_id);
-      //   if (user.blocked_us) {
-      //     this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHORIZED);
-      //   } else {
-      //     let authenticated = await Crypt.validateHash(request.body.current_password, user.password_us);
-      //     if (authenticated) {
-      //       if (request.body.new_password !== request.body.current_password && Strings.validatePassword(request.body.new_password)) {
-      //         let crypted = await Crypt.hash(request.body.new_password);
-      //         await this.env.pgModels.users.updatePassword(user.id_us, crypted);
-      //         this.env.sendResponse(request, response, HttpResponseStatus.OK);
-      //       } else {
-      //         this.env.sendResponse(request, response, HttpResponseStatus.MISSING_PARAMS);
-      //       }
-      //     } else {
-      //       this.env.sendResponse(request, response, HttpResponseStatus.NOT_AUTHORIZED);
-      //     }
-      //   }
-      // } else {
-      //   this.env.sendResponse(request, response, HttpResponseStatus.MISSING_PARAMS);
-      // }
+      if (request.body && request.body.current_password && request.body.new_password) {
+        let user = await this.env.pgModel.users.getUserById(request.session.user_id);
+        let authenticated = await Crypt.validateHash(request.body.current_password, user.password_us);
+        if (authenticated) {
+          if (request.body.new_password !== request.body.current_password && Strings.validatePassword(request.body.new_password)) {
+            let crypted = await Crypt.hash(request.body.new_password);
+            await this.env.pgModel.users.updatePassword(user.id_us, crypted);
+            response.send();
+          } else {
+            response.sendStatus(HttpResponseStatus.BAD_PARAMS);
+          }
+        } else {
+          response.sendStatus(HttpResponseStatus.NOT_AUTHORIZED);
+        }
+      } else {
+        response.sendStatus(HttpResponseStatus.BAD_PARAMS);
+      }
     } catch (e) {
       next(e);
     }

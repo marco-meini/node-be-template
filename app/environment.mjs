@@ -1,5 +1,3 @@
-"use strict";
-
 import { Logger, MongoClienManager, PgClientManager, SendGridMailManager, SessionMiddleware } from "node-be-core";
 import config from "../config/config.mjs";
 import { MongoModel } from "./model/mongo/mongo-model.mjs";
@@ -59,6 +57,11 @@ class Environment {
     await connection.connect();
     this.mongoModel = new MongoModel(connection);
     this.session = new SessionMiddleware(this.config.session.headerName, this.config.session.expiration, this.mongoModel.connection);
+  }
+
+  async end() {
+    await this.pgModel.connection.disconnect();
+    this.mongoModel.connection.disconnect();
   }
 }
 

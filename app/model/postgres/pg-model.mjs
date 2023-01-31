@@ -1,5 +1,3 @@
-"use strict";
-
 import { PgClientManager } from "node-be-core";
 import { Users } from "./users.mjs";
 

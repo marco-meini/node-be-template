@@ -1,5 +1,3 @@
-"use strict";
-
 import { MongoClienManager } from "node-be-core";
 
 class MongoModel {

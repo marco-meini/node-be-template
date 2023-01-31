@@ -9,6 +9,7 @@
   "author": "Marco Meini",
   "license": "ISC",
   "dependencies": {
+    "compression": "^1.7.4",
     "express": "^4.18.2",
     "handlebars": "^4.7.7",
     "node-be-core": "git@github.com:marco-meini/node-be-core.git",
