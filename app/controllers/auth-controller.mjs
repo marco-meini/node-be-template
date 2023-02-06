@@ -153,7 +153,7 @@ class AuthController extends Abstract_Controller {
               host: request.get("host")
             });
             // send email
-            let result = await this.env.mailManager.send({ from: this.env.config.mailManager.from, to: user.email_us, subject: "Reset password", html: html });
+            await this.env.mailManager.send({ from: this.env.config.mailManager.from, to: user.email_us, subject: "Reset password", html: html });
             await this.env.pgModel.connection.commit(tc);
             response.send();
           }
@@ -171,14 +171,14 @@ class AuthController extends Abstract_Controller {
 
   /**
    *
-   * @param {import("common-mjs").MobileSessionRequest} request
+   * @param {import("node-be-core").SessionRequest} request
    * @param {import("express").Response} response
    * @param {import("express").NextFunction} next
    */
   async __passwordChange(request, response, next) {
     try {
       if (request.body && request.body.current_password && request.body.new_password) {
-        let user = await this.env.pgModel.users.getUserById(request.session.user_id);
+        let user = await this.env.pgModel.users.getUserById(request.session.id_user);
         let authenticated = await Crypt.validateHash(request.body.current_password, user.password_us);
         if (authenticated) {
           if (request.body.new_password !== request.body.current_password && Strings.validatePassword(request.body.new_password)) {
