@@ -76,7 +76,7 @@ class AuthController extends Abstract_Controller {
         let removed = await this.env.session.sessionManager.removeToken(logoutData.refresh_token);
         return response.sendStatus(removed > 0 ? HttpResponseStatus.OK : HttpResponseStatus.NOT_AUTHENTICATED);
       } else {
-        return response.sendStatus(HttpResponseStatus.MISSING_PARAMS);
+        return response.sendStatus(HttpResponseStatus.BAD_PARAMS);
       }
     } catch (e) {
       next(e);
@@ -110,7 +110,7 @@ class AuthController extends Abstract_Controller {
           /** @type {import("node-be-core").ISession} */
           let deviceSession = await this.env.session.sessionManager.getSessionByRefeshToken(refreshData.refresh_token);
           if (deviceSession) {
-            let user = await this.env.pgModel.users.getUserById(deviceSession.user_id);
+            let user = await this.env.pgModel.users.getUserById(deviceSession.id_user);
             if (!user) {
               return response.sendStatus(HttpResponseStatus.NOT_AUTHENTICATED);
             } else {

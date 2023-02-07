@@ -109,3 +109,4 @@ config/pm2-mac.config.js
 
 package-lock.json
 package-lock.json
+spec/config.mjs

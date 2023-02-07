@@ -4,6 +4,7 @@ import { join } from "path";
 import { Environment } from "./environment.mjs";
 import { AuthController } from "./controllers/auth-controller.mjs";
 import { HttpResponseStatus } from "node-be-core";
+import { UsersController } from "./controllers/users-controller.mjs";
 
 class App {
   constructor() {
@@ -18,7 +19,9 @@ class App {
       await this.env.start();
 
       const auth = new AuthController(this.env);
+      const users = new UsersController(this.env);
       this.express.use(join(this.env.config.root, auth.route), auth.router);
+      this.express.use(join(this.env.config.root, users.route), users.router);
 
       this.express.use(join(this.env.config.root, "/healthcheck"), (request, response) => {
         response.send({ uptime: process.uptime() });
